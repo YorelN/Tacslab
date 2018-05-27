@@ -1,19 +1,22 @@
 const express = require("express");
 const bodyParser = require("body-parser");
-const socket = require("socket.io");
+const socketio = require("socket.io");
+const http = require("http");
+const port = 8080;
 
 const app = express();
+const server = http.createServer(app);
 
-server = app.listen(8080, function() {
-  console.log("server is running on port 8080");
-});
-
-io = socket(server);
+const io = socketio(server);
 
 io.on("connection", socket => {
-  console.log(socket.id);
+  socket.on("connect", function(data) {
+    console.log(`New client: [ ${data} ]`);
+  });
 
-  socket.on("SEND_MESSAGE", function(data) {
-    io.emit("RECEIVE_MESSAGE", data);
+  socket.on("disconnect", () => {
+    console.log("user disconnected");
   });
 });
+
+server.listen(port, () => console.log(`Listening on port ${port}`));

@@ -1,87 +1,66 @@
 import React from "react";
 import io from "socket.io-client";
-
-class Chat extends React.Component {
-  constructor(props) {
-    super(props);
-
-    this.state = {
-      username: "",
-      message: "",
-      messages: []
-    };
-    this.socket = io("localhost:8080");
-
-    this.socket.on("RECEIVE_MESSAGE", function(data) {
-      addMessage(data);
-    });
-
-    const addMessage = data => {
-      console.log(data, "ADD_MESSAGE_DATA");
-      this.setState({ messages: [...this.state.messages, data] });
-    };
-
-    this.sendMessage = ev => {
-      ev.preventDefault();
-      this.socket.emit("SEND_MESSAGE", {
-        author: this.state.username,
-        message: this.state.message
-      });
-      this.setState({ message: "" });
-    };
+import Appbar from "./components/Appbar";
+import { Route, withRouter, Redirect, Switch } from "react-router-dom";
+import Login from "./components/Login";
+import Chat from "./components/Chat";
+import Signup from "./components/Signup";
+import Home from "./components/Home";
+import styled, { injectGlobal } from "styled-components";
+import Grid from "@material-ui/core/Grid";
+import { firebase } from "./firebase.config";
+import { connect } from "react-redux";
+injectGlobal`
+  a {
+    text-decoration: none;
   }
+  button:focus {outline:0;}
+
+  a:hover {
+    text-decoration: none;
+    color: inherit;
+    fill: inherit;
+  }
+`;
+
+const Container = styled(Grid)`
+  && {
+    width: 100%;
+    height: calc(100vh - 64px);
+    overflow: auto;
+    margin-top: 64px;
+  }
+`;
+
+class App extends React.Component {
   render() {
     return (
-      <div className="container">
-        <div className="row">
-          <div className="col-4">
-            <div className="card">
-              <div className="card-body">
-                <div className="card-title">Global Chat</div>
-                <hr />
-
-                <div className="messages">
-                  {this.state.messages.map(message => {
-                    return (
-                      <div>
-                        {message.author}: {message.message}
-                      </div>
-                    );
-                  })}
-                </div>
-                <div className="footer">
-                  <input
-                    type="text"
-                    placeholder="Username"
-                    value={this.state.username}
-                    onChange={ev =>
-                      this.setState({ username: ev.target.value })
-                    }
-                    className="form-control"
-                  />
-                  <br />
-                  <input
-                    type="text"
-                    placeholder="Message"
-                    className="form-control"
-                    value={this.state.message}
-                    onChange={ev => this.setState({ message: ev.target.value })}
-                  />
-                  <br />
-                  <button
-                    onClick={this.sendMessage}
-                    className="btn btn-primary form-control"
-                  >
-                    Send
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+      <div>
+        <Appbar />
+        <Container container spacing={0} alignItems="center" justify="center">
+          <Route
+            exact
+            path="/chat"
+            render={() =>
+              this.props.auth.isLoggedIn ? <Chat /> : <Redirect to="/login" />
+            }
+          />
+          <Switch>
+            <Route exact path="/login" component={Login} />
+            <Route exact path="/signup" component={Signup} />
+            <Route exact path="/" component={Home} />
+            <Route exact path="/chat" component={Chat} />
+          </Switch>
+        </Container>
       </div>
     );
   }
 }
 
-export default Chat;
+function mapStateToProps({ auth }) {
+  return {
+    auth
+  };
+}
+
+export default withRouter(connect(mapStateToProps)(App));
